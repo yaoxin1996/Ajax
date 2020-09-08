@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <form action="" id="form">
+    <input type="text" name="username">
+    <input type="password" name="password">
+    <button type="submit">提交</button>
+  </form>
+
+  <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.js"></script>
+  <script>
+    $('#form').on('submit', function () {
+      var params = $('#form').serialize()
+      serializeObject($(this))
+      console.log(serializeObject($(this)))
+      return false
+    })
+    function serializeObject (obj) {
+      //  处理结果对象
+      var result = {}
+      var params = obj.serializeArray()
+
+      // 循环数组，将数组转化为对象类型
+      $.each(params, function (index, value) {
+        result[value.name] = value.value
+      })
+      // 将处理结果返回到函数外部
+      return result
+    }
+
+  </script>
+</body>
+</html>

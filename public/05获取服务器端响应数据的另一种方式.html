@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script type="text/javascript">
+    var xhr = new XMLHttpRequest()
+    // 0 已经创建对象 还没对ajax对象进行配置（没有调用open()）
+    console.log(xhr.readyState)
+    xhr.open('get', 'http://localhost:3000/readystate')
+    // 1 已经对ajax对象进行配置 还没发送请求（没有调用send()）
+    console.log(xhr.readyState)
+    
+    // 当ajax状态码发生变化时触发
+    xhr.onreadystatechange = function () {
+      // 2 请求已发送
+      // 3 已经接收到部分数据
+      // 4 响应数据已经接收完成
+      console.log(xhr.readyState)
+      // 对ajax状态码进行判断 如果 readystate=4 代表数据接收完成
+      if (xhr.readyState == 4) {
+        console.log(xhr.responseText)
+      }
+    }
+    xhr.send()
+    
+  </script>
+</body>
+</html>

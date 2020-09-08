@@ -1,0 +1,1397 @@
+<template>
+  <div class="block-bg">
+      <div class="formtop">
+        <el-form :model="search" ref="search" class="search" :rules="addRules">
+          <el-form-item prop="phone">
+              <!-- @input='searchPhone' -->
+            <el-input type="phone" maxlength="11" clearable v-model.number="search.phone" autocomplete="off" placeholder="请输入手机号"></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" icon="el-icon-search" @click="onSearch('search')">搜 索</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+      <div class="formMiddle">
+        <div>
+          <el-table v-if="showTable" :data="tableData" border style="width: 100%">
+            <el-table-column prop="studentname" label="学生姓名" width="180"></el-table-column>
+            <el-table-column prop="staffname" label="营销人员"></el-table-column>
+            <el-table-column prop="studentmobile" label="学生电话"></el-table-column>
+            <el-table-column prop="colId" v-if="false"></el-table-column>
+            <el-table-column prop="bId" v-if="false"></el-table-column>
+            <el-table-column prop="marketId" v-if="false"></el-table-column>
+            <el-table-column prop="method" label="操作">
+              <template slot-scope="scope" >
+                <el-button size="mini" @click="addForm(scope.$index)" type="primary">添加</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+      <div class="formbottom" v-if="aftersearch">
+        <div>
+          <h1 v-if="ifstudyinfo">您搜索的信息为空，默认直接添加</h1>
+          <div class="basic">
+            <i class="el-icon-close" @click="closeForm('search')"></i>
+          </div>
+          <h1 class="h1_title">基本信息</h1>
+          <div class="splitline"></div>
+          <el-form :model="form" :rules="rulesForm" ref="form" :status-icon="true" label-position="right" :label-width="labelWidth">
+            <el-row>
+              <el-col :span="6">
+                <el-form-item label="学生姓名" prop="name">
+                  <el-input v-model="form.name"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="学生性别" prop="gender">
+                  <el-select clearable style="width:100%;" v-model="form.gender">
+                    <el-option label="男" value="男"></el-option>
+                    <el-option label="女" value="女"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="报名校区" prop="school1">
+                  <el-select clearable style="width:100%;" v-model="form.school1">
+                    <el-option v-for="item in schoolList" :key="item.did" :label="item.department" :value="item.did" :disabled="item.disabled"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="所在年级" prop="grade">
+                  <el-select clearable style="width:100%;" v-model="form.grade" @visible-change="getGrade" @change="changeGrade">
+                    <el-option v-for="item in form.gradeList" :key="item.Id" :label="item.gradename" :value="item.gradename"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="6">
+                <el-form-item label="所在班级" prop="class">
+                  <el-select clearable style="width:100%;" v-model="form.class" @visible-change="getClassList">
+                    <el-option v-for="item in form.classList" :key="item.Id" :label="item.classname" :value="item.Id"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="学校名称" prop="school">
+                  <div style="display:flex;">
+                    <el-autocomplete
+                      style="width:100%"
+                      class="inline-input"
+                      v-model="form.school"
+                      :fetch-suggestions="querySearch"
+                      placeholder=""
+                      :trigger-on-focus="false"
+                      @blur="getname"
+                    ></el-autocomplete>
+                      <!-- @select="getSchool" -->
+                  </div>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="详细住址" prop="address">
+                  <el-input v-model="form.address"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="学生电话" prop="student">
+                  <el-input v-model.number="form.student" maxlength="11"></el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="6">
+                <el-form-item label="身份证号" prop="IDcode">
+                  <el-input v-model="form.IDcode" @blur="getStaffCard" maxlength="18"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="出生日期" prop="birth">
+                  <el-date-picker
+                    style="width:100%;"
+                    value-format="yyyyMMdd"
+                    v-model="form.birth"
+                    type="date"
+                    placeholder="请选择">
+                  </el-date-picker>
+                  <!-- :picker-options="pickerOptions" -->
+                  <!-- :default-value="new Date() - 3600 * 1000 * 24 * 365 * 10" -->
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="来源方式" prop="from">
+                  <el-select clearable style="width:100%;" v-model="form.from" @visible-change="getFromType">
+                    <el-option v-for="item in form.fromList" :key="item.Id" :label="item.note" :value="item.note"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="家长电话" prop="parent">
+                  <el-input v-model.number="form.parent" maxlength="11"></el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="6">
+                <el-form-item label="独生子女" prop="child">
+                  <el-select clearable style="width:100%;" v-model="form.child">
+                    <el-option label="是" :value="1"></el-option>
+                    <el-option label="否" :value="0"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="QQ">
+                  <el-input maxlength="11" v-model.number="form.QQ"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="学生血型">
+                  <el-input v-model="form.blood"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="不喜欢老师类型">
+                  <el-input v-model="form.teacher"></el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="6">
+                <el-form-item label="学生兴趣爱好">
+                  <el-input v-model="form.hobby"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="是否外地">
+                  <el-select clearable style="width:100%;" v-model="form.otherplaces">
+                    <el-option label="是" :value="1"></el-option>
+                    <el-option label="否" :value="0"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="助单人">
+                  <el-cascader
+                    style="width:100%;"
+                    @visible-change="getStaffList"
+                    :options="options"
+                    :props="{ multiple: true }"
+                    :show-all-levels="true"
+                    @change="getValue"
+                    v-model="selectedOptions"
+                    clearable
+                    filterable>
+                  </el-cascader>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="签单人">
+                  <div style="width:200px;">默认当前账号</div>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-form-item label="学生类型" prop="type">
+                <el-checkbox-group v-model="form.type">
+                  <el-checkbox v-for="item in typeList" :key="item" :label="item" style="margin-left:0px;margin-right:30px;">{{item}}</el-checkbox>
+                </el-checkbox-group>
+              </el-form-item>
+            </el-row>
+            <el-row style="margin-bottom:20px;">
+              <el-form-item label="外部备注" prop="ps">
+                <el-input
+                  type="textarea"
+                  :rows="2"
+                  v-model="form.ps"></el-input>
+              </el-form-item>
+            </el-row>
+          </el-form>
+        </div>
+        <!-- 科目信息 -->
+        <h1 class="h1_title">所报科目信息</h1>
+        <div class="splitline"></div>
+        <div>
+          <el-form :model="studyform" ref="studyform" :status-icon="true" label-position="right" label-width="120px">
+            <el-row v-for="(curses,indexone) in studyform.curses" :key="indexone" label-width="0px">
+              <el-tag>{{'课程'+(indexone+1)}}</el-tag>
+              <el-row>
+                <el-col :span="8">
+                  <el-form-item
+                    label="课程类型"
+                    :prop="'curses.'+indexone+'.type'"
+                    :rules="[{required:true,message:'请选择课程类型',trigger:'change'}]">
+                    <el-radio-group clearable v-model="curses.type" style="width:100%" @change="changeClass(indexone)">
+                      <el-radio :label="1">班课</el-radio>
+                      <el-radio :label="2">非班课</el-radio>
+                      <el-radio :label="3">活动课</el-radio>
+                      <el-radio :label="4">晚自习</el-radio>
+                    </el-radio-group>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item
+                    label="班型"
+                    :prop="'curses.'+indexone+'.sub'"
+                    :rules="[{required:true,message:'请选择班型',trigger:'change'}]">
+                    <el-select @change="getPrice(indexone)" clearable style="width:100%;" v-model="curses.sub">
+                      <el-option v-for="(item, subIndex) in curses.classtypeList" :key="subIndex" :label="item.name" :value="item.tfId"></el-option>
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item
+                    label="年级"
+                    :prop="'curses.'+indexone+'.grade'"
+                    :rules="[{required:true,message:'请选择年级',trigger:'change'}]">
+                    <el-select @change="getPrice(indexone)" @visible-change="getGrade" clearable v-model="curses.grade" style="width:100%">
+                      <el-option v-for="item in form.gradeList" :key="item.Id" :label="item.gradename" :value="item.Id" :disabled="item.Id < disabled"></el-option>
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row>
+                <el-col :span="8">
+                  <el-form-item
+                    v-if="curses.showInput"
+                    label="科目"
+                    :prop="'curses.'+indexone+'.course'"
+                    :rules="[{required:true,message:'请选择科目',trigger:'change'}]">
+                    <el-select @change="getPrice(indexone)" clearable v-model="curses.course" style="width:100%" @visible-change="getCourse">
+                      <el-option v-for="item in studyform.courseList" :key="item.disId" :label="item.name" :value="item.name"></el-option>
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item
+                    v-if="curses.showDate"
+                    label="班级"
+                    :prop="'curses.'+indexone+'.class'"
+                    :rules="[{required: true, message: '请选择班级', trigger: 'change'}]">
+                    <el-select v-model="curses.class" placeholder="请选择" style="width:100%">
+                      <el-option
+                        v-for="item in nightList"
+                        :key="item.nightId"
+                        :label="item.nightname"
+                        :value="item.nightId">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8" >
+                  <el-form-item label="单科价格" v-if="curses.showInput">
+                    <el-input :disabled="true" clearable v-model="curses.price">
+                      <template slot="append">元</template>
+                    </el-input>
+                  </el-form-item>
+                  <el-form-item
+                    v-if="curses.showDate"
+                    label="价格"
+                    :prop="'curses.'+indexone+'.selfPri'"
+                    :rules="[
+                      {required: true, message: '请输入价格', trigger:'blur'},
+                    ]">
+                    <el-input @input="getsinglePrice(indexone)" type="number" :min="0" v-model="curses.selfPri">
+                      <template slot="append">元</template>
+                    </el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item
+                    v-if="curses.showInput"
+                    label="所报课时"
+                    :prop="'curses.'+indexone+'.curse'"
+                    :rules="[
+                      {required:true,message:'请输入课时',trigger:'blur'},
+                    ]">
+                    <el-input @input="getsinglePrice(indexone)" style="width:100%;" type="number" :min="0" v-model="curses.curse">
+                      <template slot="append">小时</template>
+                    </el-input>
+                  </el-form-item>
+                  <el-form-item
+                    v-if="curses.showDate"
+                    label="时长"
+                    :prop="'curses.'+indexone+'.long'"
+                    :rules="[
+                      {required: true, message: '请输入晚自习时长', trigger: 'change'},
+                      ]">
+                      <!-- {type: 'number', message: '时长必须为数字'} -->
+                      <!-- { pattern: (/^[1-9]{1}\d*(.\d{1,2})?$|^0.\d{1,2}$/), message: '请输入整数或一位小数', trigger: 'change' } -->
+                      <div style="display:flex;">
+                        <el-input v-model="curses.long" type="number" :min="0" @input="getsinglePrice(indexone)">
+                          <template slot="append">月</template>
+                        </el-input>
+                      </div>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row>
+                <el-col :span="8">
+                  <el-form-item
+                    v-if="curses.showInput"
+                    label="当前成绩"
+                    :prop="'curses.'+indexone+'.score'"
+                    :rules="[{required:true,message:'请输入当前成绩',trigger:'blur'}]">
+                    <el-input clearable v-model="curses.score">
+                      <template slot="append">分</template>
+                    </el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item
+                    label="折扣"
+                    :prop="'curses.'+indexone+'.discount'"
+                    :rules="[
+                      {required:true,message:'请输入折扣'},
+                      {type: 'number', message:'折扣必须为数字'}
+                    ]">
+                    <div style="display:flex">
+                      <el-input placeholder="若无折扣，填100%" maxlength="3" style="width:100%" v-model.number="curses.discount" @input="getsinglePrice(indexone)">
+                        <template slot="append">%</template>
+                      </el-input>
+                    </div>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item
+                    label="抵扣"
+                    :prop="'curses.'+indexone+'.deduction'"
+                    :rules="[
+                      {required:true,message:'请输入抵扣金额'},
+                    ]">
+                      <!-- {type: 'number', message:'抵扣金额必须为数字'} -->
+                    <el-input placeholder="若无抵扣，填0" v-model="curses.deduction" type="number" :min="0" @input="getsinglePrice(indexone)">
+                      <template slot="append">元</template>
+                    </el-input>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row>
+                <el-col :span="8">
+                  <el-form-item label="是否为赠课" :prop="'curses.'+indexone+'.give'"
+                    :rules="[{required:true,message:'请选择是否为赠课', trigger: 'change'}]">
+                    <el-select clearable style="width:100%;" v-model="curses.give" @change="getsinglePrice(indexone)">
+                      <el-option label="是" :value="1"></el-option>
+                      <el-option label="否" :value="2"></el-option>
+                    </el-select>
+                  </el-form-item>
+                  <!-- <el-tag v-if="isShow"></el-tag> -->
+                </el-col>
+                <el-col :span="10">
+                  <el-form-item label="课程时间" :prop="'curses.' + indexone + '.regDate'"
+                    :rules="[{required: true, message: '请选择课程开始结束时间'}]">
+                    <el-date-picker
+                      v-model="curses.regDate"
+                      type="daterange"
+                      range-separator="至"
+                      start-placeholder="开始日期"
+                      end-placeholder="结束日期"
+                      value-format="yyyy-MM-dd"
+                      :picker-options="pickerOptions">
+                    </el-date-picker>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <!-- <el-row>
+                <el-col>
+                  <el-form-item
+                    label="日期"
+                    v-if="curses.showDate"
+                    :prop="'curses.'+indexone+'.month'"
+                    :rules="[
+                      {required: true, message: '请选择晚自习起止时间'}
+                    ]">
+                    <el-date-picker
+                      v-model="curses.month"
+                      type="daterange"
+                      value-format="yyyy-MM-dd"
+                      range-separator="至"
+                      start-placeholder="开始时间"
+                      end-placeholder="结束时间">
+                    </el-date-picker>
+                  </el-form-item>
+                </el-col>
+              </el-row> -->
+              <el-row>
+                <el-form-item label="内部备注" :prop="'curses.'+indexone+'.remarks'">
+                  <el-input
+                    type="textarea"
+                    :rows="2"
+                    placeholder="请输入备注"
+                    v-model="curses.remarks">
+                  </el-input>
+                </el-form-item>
+              </el-row>
+              <el-row v-if="curses.showInput">
+                <el-col :span="11">
+                  <!-- 意向上课时间 -->
+                  <h3 class="splitline-title">意向上课时间</h3>
+                  <el-row
+                    v-for="(latertime, indextwo) in curses.latertime"
+                    :label="'意向上课时间' + (indextwo+1)"
+                    label-width="120px;"
+                    :key="indextwo">
+                    <el-col :span="10">
+                      <el-form-item
+                        :label="'日期'+(indextwo+1)"
+                        :prop="'curses['+indexone+'].latertime.'+indextwo+'.week'"
+                        :rules="[{required:true,message:'请选择日期',trigger:'change'}]">
+                        <el-select clearable style="width:100%;" v-model="latertime.week" placeholder="请选择日期">
+                          <el-option label="星期一" value="星期一"></el-option>
+                          <el-option label="星期二" value="星期二"></el-option>
+                          <el-option label="星期三" value="星期三"></el-option>
+                          <el-option label="星期四" value="星期四"></el-option>
+                          <el-option label="星期五" value="星期五"></el-option>
+                          <el-option label="星期六" value="星期六"></el-option>
+                          <el-option label="星期日" value="星期日"></el-option>
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="10">
+                      <el-form-item
+                        label="时间"
+                        :prop="'curses['+indexone+'].latertime.'+indextwo+'.time'"
+                        :rules="[{required:true,message:'请选择时间',trigger:'change'}]">
+                        <el-time-select clearable style="width:100%;" v-model="latertime.time"
+                          :picker-options="{
+                            start: '06:00',
+                            step: '01:00',
+                            end: '22:00'
+                          }"
+                          placeholder="请选择时间">
+                        </el-time-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="3" :offset="1">
+                      <el-button plain type="danger" v-if="showDelete" @click.prevent="removeTime(latertime)">删除</el-button>
+                    </el-col>
+                  </el-row>
+                  <el-row>
+                    <el-col :span="10">
+                      <el-form-item label-width="120px">
+                        <el-button size="small" @click="addTime(indexone)" type="info" icon="el-icon-plus" style="width:100%;">新增上课时间</el-button>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <!-- 意向上课时间 -->
+                </el-col>
+                <el-col :span="12" :offset="1">
+                  <!-- 不方便上课时间 -->
+                  <h3 class="splitline-title">不方便上课时间</h3>
+                  <el-row
+                    v-for="(time, indexthree) in curses.inconvenience"
+                    :label="'不方便上课时间' + (indexthree+1)"
+                    :key="indexthree">
+                      <el-col :span="7">
+                        <el-form-item
+                          label-width="60px"
+                          :label="'日期'+(indexthree+1)">
+                          <!-- :prop="'curses['+indexone+'].inconvenience.'+indexthree+'.week'"
+                          :rules="[{required:true,message:'请选择日期',trigger:'change'}]" -->
+                          <el-select clearable style="width:100%;" v-model="time.week">
+                            <el-option label="星期一" value="星期一"></el-option>
+                            <el-option label="星期二" value="星期二"></el-option>
+                            <el-option label="星期三" value="星期三"></el-option>
+                            <el-option label="星期四" value="星期四"></el-option>
+                            <el-option label="星期五" value="星期五"></el-option>
+                            <el-option label="星期六" value="星期六"></el-option>
+                            <el-option label="星期日" value="星期日"></el-option>
+                          </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="7">
+                      <el-form-item label-width="60px" label="起始">
+                        <!-- :prop="'curses['+indexone+'].inconvenience.'+indexthree+'.begin'"
+                        :rules="[{required:true,message:'请选择开始时间',trigger:'change'}]" -->
+                        <el-time-select
+                          style="width:100%;"
+                          placeholder="开始时间"
+                          v-model="time.begin"
+                          :picker-options="{
+                          start: '06:00',
+                          step: '01:00',
+                          end: '22:00'
+                          }">
+                        </el-time-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="7">
+                      <el-form-item label-width="60px" label="结束">
+                        <!-- :prop="'curses['+indexone+'].inconvenience.'+indexthree+'.end'"
+                        :rules="[{required:true,message:'请选择结束时间',trigger:'change'}]" -->
+                        <el-time-select
+                          placeholder="结束时间"
+                          v-model="time.end"
+                          style="width:100%"
+                          :picker-options="{
+                          start: '06:00',
+                          step: '01:00',
+                          end: '22:00',
+                          minTime: time.begin
+                          }">
+                        </el-time-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="2">
+                      <el-button v-if="showDelete1" style="margin-left:20px;" type="danger" plain @click.prevent="removeTime1(time)">删除</el-button>
+                    </el-col>
+                  </el-row>
+                  <el-row>
+                    <el-col :span="7">
+                      <el-form-item label-width="60px">
+                        <el-button size="small" @click="addTime1(indexone)" type="info" icon="el-icon-plus" style="width:100%;">新增不方便时间</el-button>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <!-- 不方便上课时间 -->
+                </el-col>
+              </el-row>
+              <el-row>
+                <el-col :span="12">
+                  <el-form-item label="当前科目费用：" label-width="140px">
+                    <div class="text" v-if="curses.showInput">￥{{curses.singleprice}}</div>
+                    <div class="text" v-if="curses.showDate">￥{{curses.nightPrice}}</div>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-button v-if="showDelete2" @click.prevent="removeCurses(curses,index)" plain type="danger" style="margin-bottom:10px;">删除此课程</el-button>
+            </el-row>
+            <el-form-item label-width="0px">
+              <el-button @click="addCurses(index)" class="add" type="info" icon="el-icon-plus">新增课程</el-button>
+            </el-form-item>
+          </el-form>
+          <div class="courseText">
+            <div>课程费用总计：<span>￥{{priceTotal.split('-')[0]}}</span></div><br>
+          </div>
+          <div class="courseText">
+            <div>课程实收金额：<span>￥{{priceTotal.split('-')[1]}}</span></div>
+          </div>
+        </div>
+        <div class="submit">
+          <el-button type="primary" :disabled="submitBtn" @click="onSubmit('form', 'bottom', 'studyform')" v-auth="['入学提交']">提交</el-button>
+        </div>
+      </div>
+  </div>
+</template>
+<script>
+import { checkOPwd } from '@/utils/common'
+import { getEntrancePrice, onEntranceSearch, getEntranceSchoolList, getStudentGradeList, getEntranceClassList, getEntranceFromType, onEntranceSubmit, getStudentClass, getSchoolList, getClass, getSelfStudy } from '@/api/marketing'
+import Transfer from '@/elecomponents/Transfer'
+import { getStaffInfo, StaffCard } from '@/api/huaffairs'
+export default {
+  props: ['activeRegist'],
+  inject: ['reload'],
+  components: {
+    Transfer
+  },
+  data () {
+    /* 手机号验证 */
+    let validCode = (rule, value, callback) => {
+      let reg = /^1[3456789]\d{9}$/
+      if (!reg.test(value)) {
+        callback(new Error('请输入正确格式手机号'))
+      } else {
+        callback()
+      }
+    }
+    /* 身份证号验证 */
+    let idCard = (rule, value, callback) => {
+      if (value && (!(/\d{17}[\d|x]|\d{15}/).test(value) || (value.length !== 15 && value.length !== 18))) {
+        callback(new Error('身份证号码不符合规范'))
+      } else {
+        callback()
+      }
+    }
+    return {
+      selectedOptions: [],
+      options: [],
+      submitBtn: false,
+      rulesForm: {
+        name: [{ required: true, message: '姓名不能为空', trigger: 'blur' }],
+        class: [{ required: true, message: '所在班级不能为空', trigger: 'change' }],
+        child: [{ required: true, message: '请选择是否独生子女', trigger: 'change' }],
+        QQ: [{ type: 'number', message: '必须为数字值', trigger: 'blur' }],
+        gender: [{ required: true, message: '请选择性别', trigger: 'change' }],
+        school1: [{ required: true, message: '报名校区不能为空', trigger: 'change' }],
+        birth: [{ required: true, message: '请选择出生日期', trigger: 'change' }],
+        school: [{ required: true, message: '就读学校不能为空', trigger: 'blur' }],
+        address: [{ required: true, message: '详细住址不能为空', trigger: 'blur' }],
+        from: [{ required: true, message: '请选择来源方式', trigger: 'change' }],
+        grade: [{ required: true, message: '年级不能为空', trigger: 'change' }],
+        student: [
+          { required: true, message: '学生电话不能为空', trigger: 'blur' },
+          { type: 'number', message: '必须为数字值', trigger: 'blur' },
+          { validator: validCode, trigger: 'blur' }
+        ],
+        parent: [
+          { required: true, message: '家长电话不能为空', trigger: 'blur' },
+          { type: 'number', message: '必须为数字值', trigger: 'blur' },
+          { validator: validCode, trigger: 'blur' }
+        ],
+        type: [{ required: true, message: '至少选择一个学生类型', trigger: 'change' }],
+        IDcode: [
+          { required: true, message: '身份证号不能为空', trigger: 'blur' },
+          { validator: idCard, trigger: 'blur' }
+        ],
+        ps: [{required: true, message: '备注不能为空', trigger: 'blur'}]
+      },
+      index: 0,
+      showDelete: false,
+      showDelete1: false,
+      showDelete2: false,
+      subPrice: '',
+      search: {
+        phone: ''
+      },
+      studyinfo: [],
+      /* 表单 */
+      aftersearch: false,
+      /* 表格 */
+      showTable: false,
+      /* 提示消息 */
+      ifstudyinfo: false,
+      tableData: [],
+      labelWidth: '120px',
+      form: {
+        name: '',
+        gender: '',
+        school: '',
+        schoolList: [],
+        school1: '',
+        class: '',
+        classList: [],
+        address: '',
+        student: '',
+        phone: '',
+        blood: '',
+        parent: '',
+        grade: '',
+        gradeList: [],
+        from: '',
+        fromList: [],
+        child: '',
+        birth: '',
+        type: [],
+        teacher: '',
+        hobby: '',
+        IDcode: '',
+        ps: '',
+        otherplaces: ''
+      },
+      /* 底部 */
+      bottom: {
+        regDate: '',
+        ps: ''
+      },
+      /* 学生类型 */
+      typeList: [
+        '外向', '内向', '拖拉', '偏科',
+        '情绪不稳', '苦学无效', '贪玩厌学', '盲目学习', '粗心大意', '基础薄弱', '眼高手低', '思维呆板',
+        '缺乏应试技巧', '缺乏主动性', '注意力不集中', '欠缺综合运用能力'
+      ],
+      schoolList: [],
+      studyform: {
+        sub: '',
+        course: '',
+        courseList: [],
+        grade: '',
+        score: '',
+        price: '',
+        discount: '',
+        curses: [{
+          curse: '',
+          classtypeList: [],
+          sub: '',
+          price: '',
+          configId: '',
+          type: '',
+          grade: '',
+          discount: '',
+          deduction: '',
+          give: 2,
+          score: '',
+          singleprice: 0,
+          inconvenience: [{
+            week: '',
+            begin: '',
+            end: ''
+          }],
+          latertime: [{
+            week: '',
+            time: ''
+          }],
+          showInput: true,
+          showDate: false,
+          month: '',
+          selfPri: '',
+          class: '',
+          long: null,
+          nightPrice: 0,
+          nPrice: 0,
+          sPrice: 0,
+          regDate: '',
+          remarks: ''
+        }]
+      },
+      addRules: {
+        phone: [
+          { type: 'number', message: '必须为数字值', trigger: ['blur', 'change'] },
+          { validator: validCode, trigger: ['blur', 'change'] }
+        ]
+      },
+      colId: '',
+      bId: '',
+      mobile: '',
+      marketId: '',
+      staff: '',
+      showstaff: false,
+      pickerOptions: {
+        // disabledDate: (time) => {
+        //   return time.getTime() > new Date() - 3600 * 1000 * 24 * 365 * 10
+        // }
+        disabledDate (time) {
+          return time.getTime() < Date.now() - 8.64e7
+        }
+      },
+      dis: '',
+      helper: [],
+      classtype: '',
+      showInput: true,
+      tfId: '',
+      nightList: [],
+      nightPrice: '',
+      noteList: [],
+      receipts: 0,
+      disabled: ''
+      // isShow: false
+    }
+  },
+  methods: {
+    changeGrade () {
+      // this.disabled = this.form.grade
+      for (var i = 0; i < this.form.gradeList.length; i++) {
+        if (this.form.grade === this.form.gradeList[i].gradename) {
+          this.disabled = this.form.gradeList[i].Id
+        }
+      }
+      if (this.form.grade === '') {
+        this.disabled = 0
+      }
+      console.log(this.disabled, this.form.gradeList)
+    },
+    getValue (val) {
+      this.helper = []
+      for (var i = 0; i < val.length; i++) {
+        this.helper.push(val[i][0])
+      }
+    },
+    getStaffList (event) {
+      if (event === true) {
+        getStaffInfo().then(res => {
+          this.options = []
+          for (let i = 0; i < res.data.length; i++) {
+            this.options.push({'value': res.data[i].Id, 'label': res.data[i].staffuser + ' ~ ' + res.data[i].name})
+          }
+        })
+      }
+    },
+    /* 通过身份证号获取信息 */
+    getStaffCard () {
+      var IDcode = this.form.IDcode
+      StaffCard(IDcode).then(response => {
+        var birthday = response.data.result.result.birthday.replace(/[^0-9]/ig, '')
+        this.form.birth = birthday
+        // if (response.data.result.result.sex === '男') {
+        //   this.registForm.sex = '男'
+        // } else if (response.data.result.result.sex === '女') {
+        //   this.registForm.sex = '女'
+        // }
+      })
+      // findStaffName(IDcode).catch(res => {
+      //   this.form.IDcode = ''
+      // })
+    },
+    /* 计算 */
+    getsinglePrice (i) {
+      var ded
+      // 课时
+      var curse
+      var long
+      var dis
+      if (this.studyform.curses[i].type != 4) {
+        if (this.studyform.curses[i].deduction !== '') {
+          ded = this.studyform.curses[i].deduction // 抵扣
+        } else {
+          ded = 0
+        }
+        if (this.studyform.curses[i].curse !== '') {
+          curse = this.studyform.curses[i].curse
+        } else {
+          curse = 0
+        }
+        if (this.studyform.curses[i].discount !== '') {
+          // dis = this.studyform.curses[i].discount / 100 // 折扣
+          dis = this.studyform.curses[i].discount // 折扣
+          this.studyform.curses[i].singleprice = (this.studyform.curses[i].price * dis * curse) / 100 - ded
+        } else {
+          this.studyform.curses[i].singleprice = this.studyform.curses[i].price * curse - ded
+        }
+
+        if (Number(this.studyform.curses[i].give === 1)) {
+          this.studyform.curses[i].sPrice = 0
+        } else {
+          this.studyform.curses[i].sPrice = Number(this.studyform.curses[i].singleprice)
+        }
+      } else if (this.studyform.curses[i].type == 4) {
+        if (this.studyform.curses[i].selfPri !== 0 && this.studyform.curses[i].selfPri !== '') {
+          this.studyform.curses[i].nightPrice = this.nightPrice
+        }
+        if (this.studyform.curses[i].deduction !== '') {
+          ded = this.studyform.curses[i].deduction
+        } else {
+          ded = 0
+        }
+        if (this.studyform.curses[i].long !== '') {
+          long = this.studyform.curses[i].long
+        } else {
+          long = 0
+        }
+        if (this.studyform.curses[i].discount !== '') {
+          dis = this.studyform.curses[i].discount // 折扣
+          this.studyform.curses[i].nightPrice = (this.studyform.curses[i].selfPri * dis * long) / 100 - ded
+        } else {
+          this.studyform.curses[i].nightPrice = this.studyform.curses[i].selfPri * long - ded
+        }
+
+        if (Number(this.studyform.curses[i].give === 1)) {
+          this.studyform.curses[i].nPrice = 0
+        } else {
+          this.studyform.curses[i].nPrice = this.studyform.curses[i].nightPrice
+        }
+      }
+      dis = 0
+      long = 0
+    },
+    /* 报名校区 */
+    getSchool () {
+      getSchoolList().then(res => {
+        this.schoolList = res.data
+        for (let i = 0; i < this.schoolList.length; i++) {
+          if ('disabled' in this.schoolList[i]) {
+          } else {
+            this.school = this.schoolList[i]['did']
+            break
+          }
+        }
+        this.getStaffList()
+      })
+    },
+    // 获取晚自习名称
+    getClassName (index) {
+      this.studyform.curses[index].class = ''
+      this.nightList = []
+      let classtype = this.studyform.curses[index].type
+      let tfId = this.studyform.curses[index].sub
+      let schoolId = this.form.school1
+      let gradeId = this.studyform.curses[index].grade
+      if (classtype !== '' && tfId !== '' && schoolId !== '' && gradeId !== '' && classtype == 4) {
+        getSelfStudy(classtype, tfId, schoolId, gradeId).then(res => {
+          this.nightList = res.data
+        })
+      }
+    },
+    /* 搜索 电话 */
+    onSearch (search) {
+      checkOPwd(this).then(res => {
+        var phone = this.search.phone
+        this.$refs[search].validate((valid) => {
+          if (valid) {
+            onEntranceSearch(phone).then(response => {
+              this.studyinfo = []
+              this.tableData = []
+              this.studyinfo = response.data.studentInfo
+              if (this.studyinfo !== null) {
+                this.aftersearch = false
+                this.ifstudyinfo = false
+                if (this.studyinfo[0].status !== 4) {
+                  this.showTable = true
+                  this.tableData = this.studyinfo
+                } else if (this.studyinfo[0].status == 4) {
+                  this.$message({
+                    showClose: true,
+                    message: '当前学生' + this.studyinfo[0].studentname + '已入学，请勿重复添加',
+                    type: 'error'
+                  })
+                  this.showTable = false
+                  this.aftersearch = false
+                }
+              } else {
+                this.ifstudyinfo = true
+                this.aftersearch = true
+                this.showTable = false
+                this.showstaff = false
+                this.colId = 0
+                this.bId = 0
+                this.mobile = 0
+                this.marketId = 0
+              }
+            })
+          } else {
+            return false
+          }
+        })
+      })
+    },
+    /* 价格 */
+    getPrice (indexone) {
+      let teachformId = this.studyform.curses[indexone].sub
+      let grade = this.studyform.curses[indexone].grade
+      let coursetype = this.studyform.curses[indexone].type
+      let subject = this.studyform.curses[indexone].course
+      let schoolId = this.form.school1
+      if (this.studyform.curses[indexone].sub === '' || this.studyform.curses[indexone].grade === '' || this.studyform.curses[indexone].type === '' || this.studyform.curses[indexone].course === undefined) {
+        this.$message.warning('请选择班型、课程类型、年级和科目')
+      } else if (subject !== '') {
+        getEntrancePrice(teachformId, grade, coursetype, subject, schoolId).then(response => {
+          this.studyform.curses[indexone].configId = response.data.lessonPrice.Id
+          this.studyform.curses[indexone].price = response.data.lessonPrice.lessonprice
+          this.studyform.curses[indexone].singleprice = this.studyform.curses[indexone].price
+          this.studyform.curses[indexone].curse = ''
+          this.studyform.curses[indexone].discount = ''
+          this.studyform.curses[indexone].deduction = ''
+        })
+        this.studyform.curses[indexone].price = ''
+      }
+      this.getClassName(indexone)
+    },
+    /* 科目 */
+    getCourse (event) {
+      let schoolId = this.form.school1
+      if (event === true) {
+        getStudentClass(schoolId).then(response => {
+          this.studyform.courseList = response.data
+        })
+      }
+    },
+    /* 录入下拉菜单 */
+    getSchoolList () {
+      getEntranceSchoolList().then(response => {
+        this.form.schoolList = []
+        for (let i = 0; i < response.data.length; i++) {
+          this.form.schoolList.push({'value': response.data[i].schoolname, 'Id': response.data[i].schoolId})
+        }
+        return this.form.schoolList
+      })
+    },
+    /* 学校列表 */
+    querySearch (queryString, cb) {
+      let schoolList = this.form.schoolList
+      let results = queryString ? schoolList.filter(this.createStateFilter(queryString)) : schoolList
+      cb(results)
+      this.noteList = results
+    },
+    getname () {
+      this.schoolnote = this.form.school
+    },
+    createStateFilter (queryString) {
+      return (school) => {
+        return (school.value.toLowerCase().indexOf(queryString.toLowerCase()) !== -1)
+      }
+    },
+    // 年级
+    getGrade (event, val) {
+      let schoolId = this.form.school1
+      if (event === true) {
+        getStudentGradeList(schoolId).then(response => {
+          this.form.gradeList = response.data
+        })
+      }
+    },
+    /* 所在班级 */
+    getClassList (event) {
+      if (event === true) {
+        getEntranceClassList().then(response => {
+          this.form.classList = response.data
+        })
+      }
+    },
+    /* 信息来源 */
+    getFromType (event) {
+      if (event === true) {
+        getEntranceFromType().then(response => {
+          this.form.fromList = response.data
+        })
+      }
+    },
+    closeForm (search) {
+      this.submitBtn = false
+      this.aftersearch = false
+      this.search.phone = ''
+      // this.$refs[search].resetFields()
+      this.studyform.sub = ''
+      this.studyform.course = ''
+      this.studyform.grade = ''
+      this.studyform.score = ''
+      this.studyform.price = ''
+      this.studyform.discount = ''
+      this.studyform.curses = []
+      this.showTable = false
+      this.reload()
+    },
+    /* 新增 意向上课时间 */
+    addTime (index) {
+      this.showDelete = true
+      let cursesLength = this.studyform.curses.length
+      for (let i = 0; i < cursesLength; i++) {
+        if (index == i) {
+          this.studyform.curses[i]['latertime'].push({
+            week: '', time: ''
+          })
+          break
+        }
+      }
+    },
+    /* 移除 意向上课时间 */
+    removeTime (latertime) {
+      let cursesLength = this.studyform.curses.length
+      for (let i = 0; i < cursesLength; i++) {
+        var index = this.studyform.curses[i]['latertime'].indexOf(latertime)
+        if (index !== -1) {
+          this.studyform.curses[i]['latertime'].splice(index, 1)
+        }
+        if (this.studyform.curses[i]['latertime'].length < 2) {
+          this.showDelete = false
+        } else {
+          this.showDelete = true
+        }
+      }
+    },
+    /* 新增不方便上课时间 */
+    addTime1 (index) {
+      this.showDelete1 = true
+      let cursesLength = this.studyform.curses.length
+      for (let i = 0; i < cursesLength; i++) {
+        if (index == i) {
+          this.studyform.curses[i]['inconvenience'].push({
+            week: '',
+            begin: '',
+            end: ''
+          })
+          break
+        }
+      }
+    },
+    /* 移除不方便上课时间 */
+    removeTime1 (time) {
+      let cursesLength = this.studyform.curses.length
+      for (let i = 0; i < cursesLength; i++) {
+        var index = this.studyform.curses[i]['inconvenience'].indexOf(time)
+        if (index !== -1) {
+          this.showDelete1 = true
+          this.studyform.curses[i]['inconvenience'].splice(index, 1)
+        }
+        if (this.studyform.curses[i]['inconvenience'].length < 2) {
+          this.showDelete1 = false
+        } else {
+          this.showDelete1 = true
+        }
+      }
+    },
+    /* 删除课程 */
+    removeCurses (curses) {
+      this.subPrice = 1
+      var index = this.studyform.curses.indexOf(curses)
+      if (index !== -1) {
+        this.studyform.curses.splice(index, 1)
+      }
+      if (this.studyform.curses.length < 2) {
+        this.showDelete2 = false
+      } else {
+        this.showDelete2 = true
+      }
+    },
+    /* 切换课程类型 */
+    changeClass (index) {
+      let classtype = this.studyform.curses[index].type
+      let schoolId = this.form.school1
+      this.classtype = classtype
+      this.studyform.curses[index].sub = ''
+      this.studyform.curses[index].grade = ''
+      this.studyform.curses[index].curse = ''
+      this.studyform.curses[index].long = ''
+      this.studyform.curses[index].score = ''
+      this.studyform.curses[index].price = ''
+      this.studyform.curses[index].deduction = ''
+      this.studyform.curses[index].discount = ''
+      this.studyform.curses[index].singleprice = 0
+      this.studyform.curses[index].nightPrice = 0
+      getClass(classtype, schoolId).then(res => {
+        this.studyform.curses[index].classtypeList = res.data
+      })
+      if (classtype == 4) {
+        this.studyform.curses[index].course = ''
+        this.studyform.curses[index].showInput = false
+        this.studyform.curses[index].showDate = true
+      } else {
+        this.studyform.curses[index].showInput = true
+        this.studyform.curses[index].showDate = false
+      }
+      this.getClassName(index)
+    },
+    /* 新增课程 */
+    addCurses (index) {
+      this.index = index + 1
+      this.showDelete2 = true
+      this.studyform.curses.push({
+        classtypeList: [],
+        curse: '',
+        sub: '',
+        type: '',
+        price: '',
+        grade: '',
+        discount: '',
+        deduction: '',
+        give: 2,
+        score: '',
+        singleprice: 0,
+        inconvenience: [{
+          week: '',
+          begin: '',
+          end: ''
+        }],
+        latertime: [{
+          week: '',
+          time: ''
+        }],
+        showInput: true,
+        showDate: false,
+        month: '',
+        selfPri: '',
+        class: '',
+        long: null,
+        nightPrice: 0,
+        sPrice: 0,
+        nPrice: 0,
+        regDate: '',
+        remarks: '',
+        key: Date.now()
+      })
+      // this.studyform.curses[index].grade = 3
+    },
+    /* 提交 */
+    onSubmit (form, bottom, studyform) {
+      this.submitBtn = true
+      this.studyValid = true
+      this.aftersearch = true
+      var colId = this.colId
+      var bId = this.bId
+      var serchmobile = this.mobile
+      var name = this.form.name
+      var sex = this.form.gender
+      var grade = this.form.grade
+      var classId = this.form.class
+      var schoolId = this.form.school
+      var address = this.form.address
+      var registtermbegin = this.bottom.regDate[0]
+      var registtermend = this.bottom.regDate[1]
+      var born = this.form.birth
+      var mobile = this.form.student
+      var parenttel = this.form.parent
+      var fromId = this.form.from
+      var onechild = this.form.child
+      var marketId = this.marketId
+      var checktype = 0
+      var schoolcode = this.form.school1
+      var QQ = this.form.QQ
+      var money = this.priceTotal.split('-')[0]
+      var blood = this.form.blood
+      var IDcode = this.form.IDcode
+      var helper = this.helper
+      var character = this.form.type
+      var stuhobile = this.form.hobby
+      var notliketec = this.form.teacher
+      var ps = this.form.ps
+      var otherPlace = this.form.otherplaces
+      var flag = true
+      var courselist = []
+      for (var i = 0; i < this.studyform.curses.length; i++) {
+        if (this.studyform.curses[i].give == 2) {
+          flag = false
+        }
+        var obj = {
+          classsize: this.studyform.curses[i].sub, // 班型
+          subject: this.studyform.curses[i].type == 4 ? 0 : this.studyform.curses[i].course, // 科目
+          grade: this.studyform.curses[i].grade, // 年级
+          sub: this.studyform.curses[i].type == 4 ? this.studyform.curses[i].long : this.studyform.curses[i].curse, // 课时
+          // coursetype: this.studyform.curses[i].type, // 课程类型
+          classtype: this.studyform.curses[i].type, // 课程类型
+          score: this.studyform.curses[i].type == 4 ? 0 : this.studyform.curses[i].score, // 分数
+          price: this.studyform.curses[i].type == 4 ? 0 : this.studyform.curses[i].price, // 单价
+          configId: this.studyform.curses[i].type == 4 ? 0 : this.studyform.curses[i].configId,
+          isGive: this.studyform.curses[i].give, // 赠课
+          deduction: this.studyform.curses[i].deduction, // 抵扣
+          discount: this.studyform.curses[i].discount, // 折扣
+          money: this.studyform.curses[i].type == 4 ? this.studyform.curses[i].nightPrice : this.studyform.curses[i].singleprice, // 单科总价
+          laterclass: this.studyform.curses[i].latertime, // 意向上课时间
+          noclass: this.studyform.curses[i].inconvenience, // 不方便上课时间
+          // nightStartMonth: this.studyform.curses[i].type == 4 ? this.studyform.curses[i].month[0] : 0, // 月份起始
+          // nightEndMonth: this.studyform.curses[i].type == 4 ? this.studyform.curses[i].month[1] : 0, // 月份结束
+          nightclassId: this.studyform.curses[i].type == 4 ? this.studyform.curses[i].class : 0, // 班级
+          nightprice: this.studyform.curses[i].type == 4 ? this.studyform.curses[i].selfPri : 0, // 价格
+          courseBegin: this.studyform.curses[i].regDate[0], // 课程开始时间
+          courseEnd: this.studyform.curses[i].regDate[1], // 课程结束时间
+          insideps: this.studyform.curses[i].remarks // 内部备注
+        }
+        courselist.push(obj)
+      }
+      if (flag) {
+        this.submitBtn = false
+        this.$message.error('不能全部是赠课')
+        return false
+      }
+      this.$refs[form].validate((valid) => {
+        this.submitBtn = true
+        if (valid) {
+          this.$refs[studyform].validate((valid) => {
+            if (valid) {
+              onEntranceSubmit(colId, bId, helper, serchmobile, name, sex, grade, classId, schoolId, address, registtermbegin, registtermend, born, mobile,
+                parenttel, fromId, onechild, marketId, checktype, schoolcode, QQ, money, blood, character, stuhobile, notliketec, ps, courselist, IDcode, otherPlace).then(response => {
+                this.$message.success('提交成功')
+                this.submitBtn = false
+                this.closeForm()
+              }).catch(response => {
+                this.submitBtn = false
+              })
+            } else {
+              this.submitBtn = false
+              this.$message.error('必填项不能为空')
+            }
+            //  else {
+            //   this.$message.error('必填项不能为空')
+            // }
+          })
+        } else {
+          this.submitBtn = false
+        }
+      })
+    },
+    /* 表单 */
+    addForm (index) {
+      this.aftersearch = true
+      this.form.name = this.studyinfo[index]['studentname']
+      this.form.gender = this.studyinfo[index]['studentsex']
+      this.form.school = this.studyinfo[index]['studentschool']
+      this.form.grade = this.studyinfo[index]['studentgrade']
+      this.form.address = this.studyinfo[index]['studentaddr']
+      this.form.student = Number(this.studyinfo[index]['studentmobile'])
+      this.marketId = this.tableData[index].marketId
+      this.colId = this.tableData[index].colId
+      this.bId = this.tableData[index].bId
+      this.mobile = this.tableData[index].studentmobile
+      this.staff = this.tableData[index].staffname
+    }
+  },
+  computed: {
+    priceTotal () {
+      let price = 0
+      let receipts = 0
+      for (var i = 0; i < this.studyform.curses.length; i++) {
+        // console.log(this.studyform.curses[i].nightPrice)
+        price += Number(this.studyform.curses[i].singleprice) + Number(this.studyform.curses[i].nightPrice)
+        receipts += Number(this.studyform.curses[i].sPrice) + Number(this.studyform.curses[i].nPrice)
+      }
+      return price + '-' + receipts
+    }
+  },
+  created () {
+    this.getSchool()
+    this.getSchoolList()
+  }
+}
+</script>
+<style scoped>
+  .basic{
+    display: flex;
+    justify-content: flex-end;
+  }
+  .basic .el-icon-close{
+    line-height: 71px;
+    font-size: 24px;
+    margin-right: 20px;
+  }
+  .el-icon-close:hover{
+    color: #409EFF;
+    cursor: pointer;
+  }
+  h1{
+    font-size: 24px;
+    font-weight: normal;
+    margin: 20px 0px;
+  }
+  .h1_title{
+    font-size: 24px;
+    font-weight: normal;
+    margin: 20px 0px;
+    text-align: center;
+  }
+  /*提交*/
+  .submit{
+    margin: 20px auto;
+    width: 70px;
+  }
+  .formtop{
+    display: flex;
+    justify-content: space-between;
+  }
+  .search{
+    display: flex;
+  }
+  .search .el-input{
+    width: 300px;
+  }
+  .search .el-button{
+    margin-left: 15px;
+  }
+  /*表单*/
+  .formMiddle{
+    margin: 20px 0px;
+  }
+  .courseText{
+    display: flex;
+    justify-content: flex-start;
+  }
+  .courseText div{
+    margin-right: 30px;
+    font-size: 15px;
+    color: #606266;
+  }
+  .courseText span{
+    color: #000;
+  }
+  h3{
+    padding: 5px 0px 5px 5px;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: normal;
+  }
+  .splitline {
+    border: 1px solid #F0F2F5;
+    margin: 20px 0;
+  }
+  .splitline-title{
+    border-bottom: 1px dashed #c0c4cc;
+    text-align: start;
+    padding-left: 10px;
+    margin-bottom: 20px;
+    color: #606266;
+    line-height: normal;
+  }
+  .add{
+    margin-bottom: 10px;
+    width: 100%;
+  }
+  .text{
+    /* line-height: 40px; */
+    font-size: 15px;
+  }
+</style>

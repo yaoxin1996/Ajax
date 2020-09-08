@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <button id="btn">发送请求</button>
+  <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.js"></script>
+  <script>
+    $('#btn').on('click', function () {
+      $.ajax({
+        type: 'get',
+        url: 'http://localhost:3000/cache',
+        success: function (res) {
+          console.log(res)
+        },
+        error: function (xhr) {
+          console.log(xhr)
+        }
+      })
+    })
+
+  </script>
+</body>
+</html>

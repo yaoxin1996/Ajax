@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <button id="btn">发送请求</button>
+  <script>
+    function fn (data) {
+      console.log(data)
+    }
+  </script>
+  <script type="text/javascript">
+    var btn = document.getElementById('btn')
+    // 点击按钮时发送请求
+    btn.onclick = function () {
+      var script = document.createElement('script')
+      // 设置 script src属性
+      script.src = 'http://localhost:3001/better?callback=fn'
+      // 将标签追加到页面中
+      document.body.appendChild(script)
+      // 为script标签添加onload事件(script标签加载完成后就删除)
+      script.onload = function () {
+        // 将body中的script标签删除
+        document.body.removeChild(script)
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <style type="text/css">
+    p:not(:empty) {
+      padding: 15px;
+    }
+    .container {
+      padding-top: 100px;
+    }
+  </style>
+</head>
+<body>
+  <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.js"></script>
+  <!-- 包括所有已编译的插件 -->
+  <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script src="./js/ajax.js"></script>
+  <div class="container">
+    <div class="form-group">
+        <label>邮箱地址</label>
+        <input type="email" class="form-control" placeholder="请输入邮箱地址" id="email">
+    </div>
+    <!-- 错误 bg-danger 正确bg-success -->
+    <p id="info"></p>
+  </div>
+  <script>
+    var emailInp = document.getElementById('email')
+    var info = document.getElementById('info')
+
+    emailInp.onblur = function () {
+      var email = this.value
+      var reg = /^([a-zA-Z]|[0-9])(\w|\-)+@[a-zA-Z0-9]+\.([a-zA-Z]{2,4})$/
+      if (!reg.test(email)) {
+        info.innerHTML = '请输入符合规则的邮箱地址'
+        info.className = 'bg-danger'
+        return
+      }
+      ajax({
+        type: 'get',
+        url: 'http://localhost:3000/verifyEmailAddress',
+        data: {
+          email: email
+        },
+        success: function (result) {
+          console.log(result)
+          info.innerHTML = result
+          info.className = 'bg-success'
+        },
+        error: function (result) {
+          console.log(result)
+          info.innerHTML = result
+          info.className = 'bg-danger'
+        }
+      })
+    }
+
+    
+  </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <form id="form" action="">
+    <input type="text" name="username">
+    <input type="password" name="password">
+    <input type="file" id="file">
+    <input type="button" id="btn" value="提交" >
+  </form>
+
+  <script>
+    // 获取按钮
+    var btn = document.getElementById('btn')
+    // 添加点击事件
+    btn.onclick = function () {
+      var form = document.getElementById('form')
+      // 将HTML表单转换为formData对象
+      var formData = new FormData(form)
+
+      // get() 获取表单对象属性中的值
+      console.log(formData.get('username'))
+      // set() 设置表单对象属性中的值
+      formData.set('username', '王五')
+      formData.append('username', '白敬亭')
+      // 如果设置的表单属性不存在 则会创建该值
+      formData.set('age', '20')
+      // delete() 删除表单对象属性中的值
+      formData.delete('password')
+
+      // 创建空的表单对象
+      var f = new FormData()
+
+      f.append('sex', '女')
+      console.log(f.get('sex'))
+
+      var xhr = new XMLHttpRequest()
+      xhr.open('post', 'http://localhost:3000/formData')
+      xhr.send(formData)
+      xhr.onload = function () {
+        if (xhr.status == 200) {
+          console.log(xhr.responseText)
+        }
+      }
+    }
+
+  </script>
+</body>
+</html>
